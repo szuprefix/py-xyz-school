@@ -21,7 +21,7 @@ class GradeSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer)
 class SessionSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = models.Session
-        fields = ('name',)
+        fields = ('name', 'number')
 
 
 class MajorSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):

@@ -25,7 +25,7 @@ def stats_student(qset=None, measures=None, period=None):
         'bind': lambda: get_student_bind_events(qset.values_list('id', flat=True)).count(),
         'bind_daily': lambda: statutils.DateStat(get_student_bind_events(list(qset.values_list('id', flat=True))),'create_time').stat(period),
         'unbind': lambda: qset_unbind.count(),
-        'unbind_clazzs': lambda: statutils.count_by(qset_unbind, 'clazz__name', distinct=True, sort="-"),
+        'unbind_classes': lambda: statutils.count_by(qset_unbind, 'class__name', distinct=True, sort="-"),
         'funnel': lambda : student_funnel(dstat.get_period_query_set(period))
     }
     return dict([(m, funcs[m]()) for m in measures])
@@ -52,8 +52,8 @@ def stats_teacher(qset=None, measures=None, period=None):
     return dict([(m, funcs[m]()) for m in measures])
 
 
-def stats_clazz(qset=None, measures=None, period=None):
-    qset = qset if qset is not None else models.Clazz.objects.all()
+def stats_class(qset=None, measures=None, period=None):
+    qset = qset if qset is not None else models.Class.objects.all()
     qset = statutils.using_stats_db(qset)
     dstat = statutils.DateStat(qset, 'create_time')
     funcs = {

@@ -75,7 +75,7 @@ class ClassViewSet(viewsets.ModelViewSet):
 
     @decorators.list_route(['get'])
     def stat(self, request):
-        return do_rest_stat_action(self, stats.stats_clazz)
+        return do_rest_stat_action(self, stats.stats_class)
 
 
 @register()
@@ -119,7 +119,7 @@ class StudentViewSet(viewsets.ModelViewSet):
     filter_fields = {
         'id': ['in', 'exact'],
         'grade': ['exact'],
-        'clazz': ['exact', 'in'],
+        'class': ['exact', 'in'],
         'number': ['exact'],
         'is_active': ['exact'],
         'is_bind': ['exact'],
@@ -140,7 +140,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     @decorators.list_route(['post'])
     def post_import(self, request):
-        importer = importers.StudentImporter(self.school)
+        importer = importers.StudentImporter()
         student, created = importer.import_one(request.data)
         return Response(self.get_serializer(instance=student).data,
                         status=created and status.HTTP_201_CREATED or status.HTTP_200_OK)

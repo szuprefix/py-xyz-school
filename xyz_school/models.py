@@ -46,8 +46,10 @@ class Session(models.Model):
     end_date = models.DateField("结束日期", blank=True)
 
     def save(self, **kwargs):
-        if not self.name:
+        if not self.name and self.number:
             self.name = "%s届" % self.number
+        if self.name and not self.number:
+            self.number = int(self.name)
         if not self.begin_date:
             self.begin_date = "%s-08-01" % self.number
         if not self.end_date:
@@ -112,7 +114,7 @@ class Major(modelutils.CodeMixin, models.Model):
     name = models.CharField("名称", max_length=64, db_index=True)
     short_name = models.CharField("简称", max_length=64, blank=True, default="", db_index=True)
     code = models.CharField("拼音缩写", max_length=64, unique=True, blank=True, default="")
-    college = models.ForeignKey("College", verbose_name="院系", related_name="majors", null=True, blank=True,
+    college = models.ForeignKey(College, verbose_name="院系", related_name="majors", null=True, blank=True,
                                 on_delete=models.PROTECT)
     study_years = models.PositiveSmallIntegerField("年制", blank=True, default=3)
     students = models.ManyToManyField('student', related_name="majors")
@@ -166,12 +168,9 @@ class Class(modelutils.CodeMixin, models.Model):
         from . import helper
         self.name, self.short_name, grade_name = helper.normalize_class_name(self.name)
         if not hasattr(self, 'entrance_session'):
-            self.entrance_session = self.school.sessions.get(number=helper.grade_name_to_number(grade_name))
+            self.entrance_session = Session.objects.get(number=helper.grade_name_to_number(grade_name))
         if not hasattr(self, 'grade'):
-            self.grade = self.school.grades.get(number=helper.cur_grade_number(grade_name))
-            # self.entrance_session, created = helper.gen_default_session(self.school, self.grade.number - 1)
-        # if self.student_names is None:
-        #     self.student_names = []
+            self.grade = Grade.objects.get(number=helper.cur_grade_number(grade_name))
         return super(Class, self).save(**kwargs)
 
 
@@ -181,7 +180,7 @@ class ClassCourse(models.Model):
         unique_together = ('clazz', 'course')
 
     clazz = models.ForeignKey(Class, verbose_name=Class._meta.verbose_name, on_delete=models.CASCADE,
-                              related_name='class_courses')
+                              related_query_name='class_course', related_name='class_courses')
     course = models.ForeignKey('course.course', verbose_name='课程', on_delete=models.CASCADE,
                                related_name='school_class_courses')
     teacher = models.ForeignKey(Teacher, verbose_name=Teacher._meta.verbose_name, null=True, blank=True,
@@ -202,8 +201,6 @@ class Student(modelutils.CodeMixin, models.Model):
     number = models.CharField("学号", max_length=32, unique=True)
     name = models.CharField("姓名", max_length=32, db_index=True)
     code = models.CharField("拼音缩写", max_length=64, db_index=True, blank=True, default="")
-    clazz = models.ForeignKey(Class, verbose_name=Class._meta.verbose_name, related_name="primary_students", null=True,
-                              blank=True, on_delete=models.PROTECT)
     grade = models.ForeignKey(Grade, verbose_name=Grade._meta.verbose_name, related_name="students",
                               on_delete=models.PROTECT)
     entrance_session = models.ForeignKey(Session, verbose_name="入学届别", related_name="entrance_students",
@@ -221,18 +218,10 @@ class Student(modelutils.CodeMixin, models.Model):
         return self.name
 
     def save(self, **kwargs):
-        if self.clazz:
-            if not hasattr(self, 'grade'):
-                self.grade = self.clazz.grade
-            if not hasattr(self, 'entrance_session'):
-                self.entrance_session = self.clazz.entrance_session
         if not hasattr(self, 'entrance_session'):
             from . import helper
             y = helper.cur_grade_year(self.grade.number)
-            self.entrance_session = self.school.sessions.get(number=y)
-        if not self.user:
-            self.user = self.party.workers.create(name=self.name, number=self.number, position="学生").user
-        self.user.groups.add(Group.objects.get_or_create(name='学生')[0])
+            self.entrance_session = Session.objects.get(number=y)
         return super(Student, self).save(**kwargs)
 
     @cached_property

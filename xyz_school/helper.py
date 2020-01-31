@@ -1,25 +1,24 @@
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
 import datetime
-from django.db.models import NOT_PROVIDED, ForeignKey
-from xyz_util import dateutils, datautils
+from xyz_util import dateutils, datautils, modelutils
 from . import choices, models
 import re
 
 
-def gen_default_grades(school):
-    gs = choices.MAP_SCHOOL_TYPE_GRADES.get(school.type)
+def gen_default_grades(type):
+    gs = choices.MAP_SCHOOL_TYPE_GRADES.get(type)
     if not gs:
         return
     for number, name in gs:
-        school.grades.create(name=name, number=number)
+        models.Grade.create(name=name, number=number)
 
 
-def gen_default_session(school, offset=0):
+def gen_default_session(offset=0):
     today = dateutils.format_the_date()
     year = today.month >= 8 and today.year or today.year - 1
     year -= offset
-    return school.sessions.get_or_create(
+    return models.Session.get_or_create(
         number=year,
         defaults=dict(
             name="%s届" % year,
@@ -218,50 +217,14 @@ def get_cur_term(corp):
 
 def init_student(user, profile):
 
-    def get_field_value_from_profile(profile, fs):
-        r = {}
-        for f in fs:
-            if isinstance(f, (ForeignKey)):
-                fo, created = f.related_model.objects.get_or_create(name=profile.get(f.verbose_name))
-                r[f.name] = fo
-            else:
-                r[f.name] = profile.get(f.verbose_name, f.default != NOT_PROVIDED and f.default or None)
-        return r
+    fns = "number,name,class".split(",")
+    ps = modelutils.translate_model_values(models.Student, profile, fns)
 
-    fns = "number,name".split(",")
-    fs = [f for f in models.Student._meta.local_fields if f.name in fns]
-    ps = get_field_value_from_profile(profile, fs)
-
-    grade_name = profile.get('年级')
-    grade_number = cur_grade_number(grade_name)
-    grade, created = models.Grade.get_or_create(number=grade_number)
-    ps['grade'] = grade
-
-    session_number = grade_name_to_number(grade_name)
-    session, created = models.Session.get_or_create(number=session_number)
-    ps['entrance_session'] = session
-
-    class_names = profile.get('班级')
-    classes = []
-    for cn in class_names.split(','):
-        clazz, created = models.Class.get_or_create(
-            name=cn,
-            defaults=dict(
-                entrance_session=session,
-                grade=grade
-            )
-        )
-        classes.append(clazz)
-    ps['clazz'] = classes and classes[0] or None
     ps['user'] = user
 
-    student, created = school.students.update_or_create(
-        number=worker.number,
+    student, created = models.Student.objects.update_or_create(
+        number=ps['number'],
         defaults=ps)
-    student.classes = classes
-    major_name = profile.get("专业")
-    if major_name:
-        student.majors = school.majors.filter(name__in=major_name.split(","))
     return student, created
 
 

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from xyz_util.importutils import BaseImporter, WARNING_KEY
 from .validators import *
 from xyz_util import datautils
+from . import models
 
 __author__ = 'denishuang'
 
@@ -13,6 +14,7 @@ def format_class_grade(d):
     g = d.get(field_grade.name)
     if v and g:
         d[field_class.name] = ','.join([normalize_class_name(a, g)[0] for a in v.split(',')])
+
 
 class ClazzImporter(BaseImporter):
     fields = [
@@ -46,39 +48,29 @@ class StudentImporter(BaseImporter):
     extra_cleans = [format_class_grade]
 
     def __init__(self):
-        self.root_department = '学生'
+        # self.root_department = '学生'
         return super(StudentImporter, self).__init__()
 
     def import_one(self, d):
-        student_number = d.get(field_student_number.name)
-
-        department_path = "%s/%s/%s" % (d.get(field_college.name), d.get(field_grade.name), d.get(field_class.name))
-        department, created = self.root_department.get_or_create_department_by_path(department_path)
+        from django.contrib.auth.models import User
+        snumber = d.get(field_student_number.name)
 
         name = d.get(field_han_name.name)
-        worker, created = self.party.workers.update_or_create(number=student_number,
-                                                              defaults=dict(
-                                                                  position='学生',
-                                                                  name=name,
-                                                              ))
-
-        if worker.profile:
-            worker.profile.update(d)
-        else:
-            worker.profile = d
-        worker.save()
-        worker.departments.add(department)
+        user, created = User.objects.update_or_create(
+            username='%s@student' % snumber,
+            defaults=dict(first_name=name)
+        )
         from .helper import init_student
-        student, created = init_student(worker)
+        student, created = init_student(user, d)
         from xyz_auth.signals import to_save_user_profile
-        to_save_user_profile.send(self, user=user, profile=profile)
+        to_save_user_profile.send(self, user=user, profile=d)
         return student, created
 
     def clean_item(self, obj):
         res = super(StudentImporter, self).clean_item(obj)
         fn = field_student_number.name
         num = res.get(fn)
-        e = Student.objects.filter(number=num).exists()
+        e = models.Student.objects.filter(number=num).exists()
         wks = res.get(WARNING_KEY)
         if e:
             errs = wks.setdefault(fn, [])
