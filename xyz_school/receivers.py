@@ -4,45 +4,49 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from xyz_auth.signals import to_get_user_profile
 
-from . import models, helper, serializers
+from . import models, helper, serializers, choices
 import logging
 
 log = logging.getLogger("django")
+from xyz_tenant.models import App
 
 
-# @receiver(post_save, sender=models.School)
-# def init_grade(sender, **kwargs):
-#     try:
-#         school = kwargs['instance']
-#         if school.grades.count() == 0:
-#             helper.gen_default_grades(school)
-#     except Exception, e:
-#         log.error("init_grade error: %s" % e)
-#
+@receiver(post_save, sender=App)
+def init_grade(sender, **kwargs):
+    app = kwargs['instance']
+    if app.name != 'school':
+        return
+    from tenant_schemas.utils import tenant_context
+    with tenant_context(app.tenant):
+        try:
+            if models.Grade.objects.count() == 0:
+                helper.gen_default_grades(app.settings.get('type', choices.SCHOOL_TYPE_UNIVERSITY))
+        except Exception, e:
+            log.error("init_grade error: %s" % e)
+
 
 @receiver(post_save, sender=models.Grade)
 def init_session(sender, **kwargs):
     try:
         grade = kwargs['instance']
-        school = grade.school
-        helper.gen_default_session(school, grade.number - 1)
+        helper.gen_default_session(grade.number - 1)
     except Exception, e:
         log.error("init_session error: %s" % e)
 
 
-@receiver(post_save, sender=models.Student)
-def add_student_to_clazz_names(sender, **kwargs):
-    try:
-        student = kwargs['instance']
-        clazz = student.clazz
-        ns = clazz.student_names
-        # print student.name, ns
-        if student.name not in ns:
-            clazz.student_names.append(student.name)
-            clazz.save()
-    except Exception, e:
-        log.error("add_student_to_clazz_names error: %s" % e)
-
+# @receiver(post_save, sender=models.Student)
+# def add_student_to_clazz_names(sender, **kwargs):
+#     try:
+#         student = kwargs['instance']
+#         clazz = student.clazz
+#         ns = clazz.student_names
+#         # print student.name, ns
+#         if student.name not in ns:
+#             clazz.student_names.append(student.name)
+#             clazz.save()
+#     except Exception, e:
+#         log.error("add_student_to_clazz_names error: %s" % e)
+#
 
 # @receiver(post_save, sender=Worker)
 # def init_student(sender, **kwargs):

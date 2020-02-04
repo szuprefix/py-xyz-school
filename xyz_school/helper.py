@@ -11,14 +11,14 @@ def gen_default_grades(type):
     if not gs:
         return
     for number, name in gs:
-        models.Grade.create(name=name, number=number)
+        models.Grade.objects.create(name=name, number=number)
 
 
 def gen_default_session(offset=0):
     today = dateutils.format_the_date()
     year = today.month >= 8 and today.year or today.year - 1
     year -= offset
-    return models.Session.get_or_create(
+    return models.Session.objects.get_or_create(
         number=year,
         defaults=dict(
             name="%s届" % year,
