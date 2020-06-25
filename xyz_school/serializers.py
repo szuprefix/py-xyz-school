@@ -65,7 +65,7 @@ class TeacherSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerialize
 
     class Meta:
         model = models.Teacher
-        fields = ('name', 'courses', 'classes', 'user_name')
+        fields = ('name', 'courses', 'classes', 'user_name', 'description')
 
 
 class TeacherListSerializer(TeacherSerializer):

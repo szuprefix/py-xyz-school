@@ -15,6 +15,7 @@ class Teacher(modelutils.CodeMixin, models.Model):
     user = models.OneToOneField(User, verbose_name="网站用户", null=True, blank=True, related_name="as_school_teacher")
     name = models.CharField("姓名", max_length=32, db_index=True)
     code = models.CharField("拼音缩写", max_length=64, db_index=True, blank=True, default="")
+    description = models.CharField("简介", max_length=256, blank=True, default="")
     create_time = models.DateTimeField("创建时间", auto_now_add=True)
     modify_time = models.DateTimeField("修改时间", auto_now=True)
     courses = models.ManyToManyField("course.course", verbose_name="课程", blank=True, through="ClassCourse",

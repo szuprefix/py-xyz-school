@@ -1,6 +1,7 @@
 # -*- coding:utf-8 -*-
 from __future__ import unicode_literals
 from xyz_auth.authentications import add_token_for_user
+from xyz_restful.mixins import BatchActionMixin
 from xyz_util.statutils import do_rest_stat_action
 
 from . import models, serializers, importers, helper, stats
@@ -112,7 +113,7 @@ class ClassCourseViewSet(viewsets.ModelViewSet):
 
 
 @register()
-class StudentViewSet(viewsets.ModelViewSet):
+class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
     queryset = models.Student.objects.all()
     serializer_class = serializers.StudentSerializer
     search_fields = ('name', 'number', 'code')
@@ -147,10 +148,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     @decorators.list_route(['POST'])
     def batch_active(self, request):
-        rows = self.filter_queryset(self.get_queryset()) \
-            .filter(id__in=request.data.get('id__in', [])) \
-            .update(is_active=request.data.get('is_active', True))
-        return Response({'rows': rows})
+        return self.do_batch_action('is_active', True)
 
     @decorators.list_route(['post'], permission_classes=[IsAuthenticated])
     def binding(self, request):
@@ -166,11 +164,7 @@ class StudentViewSet(viewsets.ModelViewSet):
 
     @decorators.list_route(['POST'])
     def batch_unbind(self, request):
-        ids = request.data.get('id__in', [])
-        ss = self.filter_queryset(self.get_queryset()).filter(id__in=ids)
-        for student in ss:
-            helper.unbind(student)
-        return Response({'rows': len(ids)})
+        return self.do_batch_action(helper.unbind)
 
     @decorators.detail_route(['post'])
     def unbind(self, request):

@@ -222,9 +222,31 @@ def init_student(user, profile):
 
     ps['user'] = user
 
+    grade_name = profile.get('年级')
+    grade_number = cur_grade_number(grade_name)
+    grade, created = models.Grade.objects.get_or_create(number=grade_number)
+    ps['grade'] = grade
+
+    session_number = grade_name_to_number(grade_name)
+    session, created = models.Session.objects.get_or_create(number=session_number)
+    ps['entrance_session'] = session
+
+    class_names = profile.get('班级')
+    classes = []
+    for cn in class_names.split(','):
+        clazz, created = models.Class.objects.get_or_create(
+            name=cn,
+            defaults=dict(
+                entrance_session=session,
+                grade=grade
+            )
+        )
+        classes.append(clazz)
+
     student, created = models.Student.objects.update_or_create(
         number=ps['number'],
         defaults=ps)
+    student.classes = classes
     return student, created
 
 

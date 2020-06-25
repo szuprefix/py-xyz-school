@@ -8,21 +8,21 @@ from . import models, helper, serializers, choices
 import logging
 
 log = logging.getLogger("django")
-from xyz_tenant.models import App
+# from xyz_tenant.models import App
 
 
-@receiver(post_save, sender=App)
-def init_grade(sender, **kwargs):
-    app = kwargs['instance']
-    if app.name != 'school':
-        return
-    from tenant_schemas.utils import tenant_context
-    with tenant_context(app.tenant):
-        try:
-            if models.Grade.objects.count() == 0:
-                helper.gen_default_grades(app.settings.get('type', choices.SCHOOL_TYPE_UNIVERSITY))
-        except Exception, e:
-            log.error("init_grade error: %s" % e)
+# @receiver(post_save, sender=App)
+# def init_grade(sender, **kwargs):
+#     app = kwargs['instance']
+#     if app.name != 'school':
+#         return
+#     from tenant_schemas.utils import tenant_context
+#     with tenant_context(app.tenant):
+#         try:
+#             if models.Grade.objects.count() == 0:
+#                 helper.gen_default_grades(app.settings.get('type', choices.SCHOOL_TYPE_UNIVERSITY))
+#         except Exception, e:
+#             log.error("init_grade error: %s" % e)
 
 
 @receiver(post_save, sender=models.Grade)
