@@ -109,19 +109,23 @@ class TeacherImporter(BaseImporter):
         department = api.corp.departments.filter(name=department_path).first()
         if not department:
             department, created = api.get_or_create_department_by_path(department_path)
-        worker, created = api.corp.workers.update_or_create(wx_userid=wx_userid,
-                                                            defaults=dict(
-                                                                mobile=d.get(field_mobile.name),
-                                                                position=d.get(field_position.name, "教师"),
-                                                                gender={"男": 1, "女": 2}.get(d.get("性别"), 0),
-                                                                name=d.get(field_han_name.name),
-                                                                email=d.get(field_email.name),
-                                                                weixinid=d.get(field_weixinid.name)
-                                                            ))
+        worker, created = api.corp.workers.update_or_create(
+            wx_userid=wx_userid,
+            defaults=dict(
+                mobile=d.get(field_mobile.name),
+                position=d.get(field_position.name, "教师"),
+                gender={"男": 1, "女": 2}.get(d.get("性别"), 0),
+                name=d.get(field_han_name.name),
+                email=d.get(field_email.name),
+                weixinid=d.get(field_weixinid.name)
+            )
+        )
         worker.update_extattr(
-            datautils.exclude_dict_keys(d, field_weixinid.name, field_email.name, field_mobile.name,
-                                        field_department.name, field_position.name, field_han_name.name,
-                                        "性别"))
+            datautils.exclude_dict_keys(
+                d,
+                field_weixinid.name, field_email.name, field_mobile.name,
+                field_department.name, field_position.name, field_han_name.name,
+                "性别"))
         worker.departments = [department]
         return worker, created
 
