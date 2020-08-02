@@ -46,7 +46,7 @@ unbind_student.short_description = u"解除绑定"
 
 @admin.register(models.Student)
 class StudentAdmin(admin.ModelAdmin):
-    list_display = ("name", 'number', 'classes', 'create_time')
+    list_display = ("name", 'number', 'class_names', 'create_time')
     raw_id_fields = ("entrance_session", "graduate_session", "grade", 'user')
     search_fields = ('name', 'number')
     actions = [unbind_student]

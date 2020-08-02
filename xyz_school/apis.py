@@ -124,6 +124,7 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
         'number': ['exact'],
         'is_active': ['exact'],
         'is_bind': ['exact'],
+        'is_formal': ['exact'],
         'class__id': ['exact', 'in']
     }
     ordering_fields = ('name', 'number', 'create_time', 'grade', 'clazz')

@@ -213,6 +213,7 @@ class Student(modelutils.CodeMixin, models.Model):
     modify_time = models.DateTimeField("修改时间", auto_now=True)
     is_active = models.BooleanField("有效", default=True)
     is_bind = models.BooleanField("已绑", default=False)
+    is_formal = models.BooleanField("正式", default=True)
     courses = models.ManyToManyField("course.course", verbose_name="课程", blank=True, related_name="school_students")
 
     def __unicode__(self):

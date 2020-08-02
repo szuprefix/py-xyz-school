@@ -81,7 +81,7 @@ class StudentSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerialize
         model = models.Student
         fields = (
             'id', 'name', 'number', 'class_names', 'classes', 'grade', 'grade_name', 'courses', 'is_active',
-            'is_bind'
+            'is_bind', 'is_formal'
         )
 
 
@@ -93,7 +93,7 @@ class CurrentStudentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Student
-        fields = ('name', 'number', 'grade', 'entrance_session', 'clazz', 'classes', 'school')
+        fields = ('name', 'number', 'grade', 'entrance_session', 'clazz', 'classes', 'school', 'is_formal')
 
 
 class CurrentTeacherSerializer(serializers.ModelSerializer):

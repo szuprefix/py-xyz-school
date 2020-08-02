@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 from xyz_auth.signals import to_get_user_profile
-
+from xyz_saas.signals import to_get_party_settings
 from . import models, helper, serializers, choices
 import logging
 
@@ -67,6 +67,12 @@ def get_school_profile(sender, **kwargs):
     if hasattr(user, 'as_school_teacher'):
         return serializers.CurrentTeacherSerializer(user.as_school_teacher, context=dict(request=kwargs['request']))
 
+
+@receiver(to_get_party_settings)
+def get_school_settings(sender, **kwargs):
+    from django.conf import settings
+    from xyz_util.datautils import access
+    return {'school': {'student': {'unregistered': access(settings, 'SCHOOL.STUDENT.UNREGISTERED')}}}
 
 def create_student_for_wechat_user(sender, **kwargs):
     wuser = kwargs['instance']
