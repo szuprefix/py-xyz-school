@@ -2,7 +2,7 @@
 from __future__ import absolute_import, unicode_literals
 from celery import shared_task, chord
 from . import helper
-# from django_szuprefix_saas.saas.models import Worker
+# from xyz_saas.models import Worker
 
 __author__ = 'denishuang'
 import logging

@@ -29,7 +29,7 @@ class MajorSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer)
 
     class Meta:
         model = models.Major
-        fields = ('name', 'code', 'college', 'college_name', 'create_time')
+        fields = ('name', 'code', 'college', 'college_name', 'create_time', 'courses')
 
 
 class CollegeSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
@@ -39,13 +39,14 @@ class CollegeSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerialize
 
 
 class ClassSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
-    grade_name = serializers.CharField(source="grade.name", read_only=True)
+    grade_name = serializers.CharField(source="grade.name", label="年级" , read_only=True)
+    major_name = serializers.CharField(source="major.name", read_only=True)
     entrance_session_name = serializers.CharField(source="entrance_session.name", label="入学年份", read_only=True)
 
     class Meta:
         model = models.Class
         fields = ('name', 'short_name', 'entrance_session', 'entrance_session_name', 'code',
-                  'primary_teacher', 'grade', 'grade_name', 'students')
+                  'primary_teacher', 'grade', 'grade_name', 'students', 'major', 'major_name')
         
 
 class ClassNameSerializer(serializers.ModelSerializer):
@@ -55,7 +56,7 @@ class ClassNameSerializer(serializers.ModelSerializer):
 
 class ClassListSerializer(ClassSerializer):
     class Meta(ClassSerializer.Meta):
-        fields = ('id', 'name', 'student_count', 'grade', 'entrance_session', 'grade_name', 'entrance_session_name')
+        fields = ('id', 'name', 'student_count', 'grade', 'entrance_session', 'grade_name', 'entrance_session_name', 'major', 'major_name')
 
 
 class TeacherSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
@@ -114,8 +115,8 @@ class StudentBindingSerializer(serializers.Serializer):
         assert 'request' in self.context, 'needs context[request]'
         self.request = self.context['request']
         self.cur_user = cur_user = self.request.user
-        if hasattr(cur_user, 'as_school_student'):
-            raise serializers.ValidationError("当前帐号已绑定过,不能重复绑定")
+        # if hasattr(cur_user, 'as_school_student'):
+        #     raise serializers.ValidationError("当前帐号已绑定过,不能重复绑定")
         mobile = data['mobile']
         number = data['number']
         name = data['name']
@@ -128,10 +129,10 @@ class StudentBindingSerializer(serializers.Serializer):
                 if not the_id or s.id == the_id:
                     ss.append(s)
         if not ss:
-            raise serializers.ValidationError("相关账号不存在, 可能查询信息不正确, 或者还未录入系统")
+            raise serializers.ValidationError("相关账号不存在，可能查询信息不正确，或者还未录入系统。")
         elif len(ss) == 1:
-            if ss[0].is_bind == True:
-                raise serializers.ValidationError("该帐号已绑定过,不能重复绑定")
+            if ss[0].is_bind or hasattr(ss[0].user, 'as_wechat_user'):
+                raise serializers.ValidationError("该帐号已绑定过，不能重复绑定。如是更换了微信，请先联系老师解绑老帐号，再重试。")
         data['students'] = ss
         return data
 

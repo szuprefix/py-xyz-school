@@ -3,11 +3,11 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils.functional import cached_property
 
-from xyz_util import modelutils
+from xyz_util.modelutils import CodeMixin
 from django.contrib.auth.models import User, Group
 
 
-class Teacher(modelutils.CodeMixin, models.Model):
+class Teacher(CodeMixin, models.Model):
     class Meta:
         verbose_name_plural = verbose_name = "老师"
         ordering = ('-create_time',)
@@ -50,7 +50,7 @@ class Session(models.Model):
         if not self.name and self.number:
             self.name = "%s届" % self.number
         if self.name and not self.number:
-            self.number = int(self.name)
+            self.number = int(self.name.replace('届', ''))
         if not self.begin_date:
             self.begin_date = "%s-08-01" % self.number
         if not self.end_date:
@@ -80,7 +80,7 @@ class Grade(models.Model):
         return self.name
 
 
-class College(modelutils.CodeMixin, models.Model):
+class College(CodeMixin, models.Model):
     class Meta:
         verbose_name_plural = verbose_name = "院系"
         ordering = ('name',)
@@ -107,7 +107,7 @@ class College(modelutils.CodeMixin, models.Model):
         return self.students.count()
 
 
-class Major(modelutils.CodeMixin, models.Model):
+class Major(CodeMixin, models.Model):
     class Meta:
         verbose_name_plural = verbose_name = "专业"
         ordering = ("name",)
@@ -119,6 +119,8 @@ class Major(modelutils.CodeMixin, models.Model):
                                 on_delete=models.PROTECT)
     study_years = models.PositiveSmallIntegerField("年制", blank=True, default=3)
     students = models.ManyToManyField('student', related_name="majors")
+    courses = models.ManyToManyField("course.course", verbose_name="课程", blank=True,
+                                     related_name="school_majors")
     create_time = models.DateTimeField("创建时间", auto_now_add=True)
     update_time = models.DateTimeField("修改时间", auto_now=True)
 
@@ -134,7 +136,7 @@ class Major(modelutils.CodeMixin, models.Model):
         return self.students.count()
 
 
-class Class(modelutils.CodeMixin, models.Model):
+class Class(CodeMixin, models.Model):
     class Meta:
         verbose_name_plural = verbose_name = "班级"
         ordering = ('grade', 'name')
@@ -150,6 +152,7 @@ class Class(modelutils.CodeMixin, models.Model):
                                         blank=True, on_delete=models.PROTECT)
     students = models.ManyToManyField('student', verbose_name='学生', blank=True, related_query_name='class',
                                       related_name='classes')
+    major = models.ForeignKey(Major, verbose_name=Major._meta.verbose_name, null=True, blank=True, related_name='classes', related_query_name='class')
     create_time = models.DateTimeField("创建时间", auto_now_add=True)
     modify_time = models.DateTimeField("修改时间", auto_now=True)
     is_active = models.BooleanField("有效", default=True)
@@ -192,7 +195,7 @@ class ClassCourse(models.Model):
         return "%s -> %s" % (self.clazz, self.course)
 
 
-class Student(modelutils.CodeMixin, models.Model):
+class Student(CodeMixin, models.Model):
     class Meta:
         verbose_name_plural = verbose_name = "学生"
         ordering = ('number',)

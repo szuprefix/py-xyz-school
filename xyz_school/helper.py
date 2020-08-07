@@ -247,6 +247,9 @@ def init_student(user, profile):
         number=ps['number'],
         defaults=ps)
     student.classes = classes
+    major_name = profile.get("专业")
+    if major_name:
+        student.majors = models.Major.objects.filter(name__in=major_name.split(","))
     return student, created
 
 
@@ -259,6 +262,13 @@ def bind(student, old_user):
         user.set_password(student.number)
         user.save()
         student.is_bind = True
+        if hasattr(old_user, 'as_school_student'):
+            old_student = old_user.as_school_student
+            if old_student.is_formal:
+                models.Student.objects.filter(user=old_user).update(is_bind=False)
+            else:
+                old_student.classes = []
+                old_student.delete()
         student.save()
     from xyz_common.signals import to_add_event
     to_add_event.send_robust(sender=student._meta.model, instance=student, name='bind')
@@ -275,3 +285,100 @@ def unbind(student):
         student.is_bind = False
         student.save()
 
+
+def reset_password(student):
+    user = student.user
+    user.set_password(student.number)
+    user.save()
+
+
+def get_exam_papers_for_courses(courses):
+    from xyz_course.models import Chapter
+    from xyz_exam.models import Paper
+    from django.db.models import Q
+    cids = list(courses.values_list('id', flat=True))
+    chapters = Chapter.objects.filter(course_id__in=cids)
+    cpids = list(chapters.values_list('id', flat=True))
+    from django.contrib.contenttypes.models import ContentType
+    ctid = ContentType.objects.get_for_model(courses.model).id
+    cptid = ContentType.objects.get_for_model(chapters.model).id
+    return Paper.objects.filter(
+        Q(owner_type=ctid) & Q(owner_id__in=cids)
+        | Q(owner_type=cptid) & Q(owner_id__in=cpids)
+    )
+
+def get_auto_gen_school ():
+    from django.conf import settings
+    return models.School.objects.get(party_id=settings.DEFAULT_SAAS_PARTY)
+    # s = access(settings, 'SCHOOL.STUDENT.AUTO_GEN_FOR_SCHOOL')
+    # return models.School.objects.filter(id=s).first()
+
+APPLY_VERIFY_CATEGORY = '申请试用'
+
+def apply_to_be_student(user, data):
+    from xyz_verify.models import Verify
+    from django.contrib.contenttypes.models import ContentType
+    school = get_auto_gen_school()
+    Verify.objects.create(
+        user=user,
+        category=APPLY_VERIFY_CATEGORY,
+        target_type=ContentType.objects.get_for_model(models.Student),
+        name="%s(%s) 申请试用" % (user.first_name, data.get('name')),
+        content=data
+    )
+
+def create_student_after_verify(verify):
+    from django.contrib.contenttypes.models import ContentType
+    if verify.category != APPLY_VERIFY_CATEGORY:
+        return
+    if verify.target_type != ContentType.objects.get_for_model(models.Student):
+        return
+    d = verify.content
+    user = verify.user
+    from xyz_verify import choices
+    from xyz_message.helper import send_message, revoke_message
+    unique_id = "verify:%s" % verify.id
+    if verify.status == choices.STATUS_PASS:
+        create_student_for_wechat_user(user.as_wechat_user, name=d.get('name'))
+        revoke_message(user, unique_id)
+    elif verify.status == choices.STATUS_REJECT:
+        title = "%s被%s." % (verify.category, verify.get_status_display())
+        if verify.reply:
+            title += "原因: %s" % verify.reply
+        send_message(verify.user, user, title, is_force=True, unique_id=unique_id)
+        if hasattr(user, 'as_school_student'):
+            user.as_school_student.delete()
+    else:
+        revoke_message(user, unique_id)
+        if hasattr(user, 'as_school_student'):
+            user.as_school_student.delete()
+
+def create_student_for_wechat_user(wuser, name=None):
+    user = wuser.user
+    if hasattr(user, 'as_school_student') and hasattr(user, 'as_saas_worker'):
+        return
+    grade = models.Grade.objects.first()
+    from datetime import datetime
+    year = datetime.now().year
+    session, created = models.Session.objects.get_or_create(number=year)
+    name = name or wuser.nickname or wuser.openid
+    clazz, created = models.Class.objects.get_or_create(
+        name="%s级微信公众号体验班" % year,
+        defaults=dict(
+            entrance_session=session,
+            grade=grade)
+    )
+
+    student, created = models.Student.objects.update_or_create(
+        number=wuser.openid,
+        defaults=dict(
+            user=user,
+            name=name,
+            # clazz=clazz,
+            is_bind=True,
+            is_formal=False,
+            entrance_session=session,
+            grade=grade
+        ))
+
+    clazz.students.add(student)

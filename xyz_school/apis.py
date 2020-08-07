@@ -20,6 +20,7 @@ class TeacherViewSet(viewsets.ModelViewSet):
     filter_fields = {
         'id': ['in', 'exact'],
         'name': ['exact'],
+        'user': ['exact']
     }
     search_fields = ('name', 'code')
     ordering_fields = ('name', 'code')
@@ -78,6 +79,15 @@ class ClassViewSet(viewsets.ModelViewSet):
     def stat(self, request):
         return do_rest_stat_action(self, stats.stats_class)
 
+    @decorators.list_route(['get'])
+    def sumary(self, request):
+        qset = self.filter_queryset(self.get_queryset())
+        dl = []
+        dl.append('班级,学生数,课程数,课程'.split(','))
+        for c in qset:
+            dl.append([c.name, c.students.count(), c.courses.count(),
+                       ",".join(list(c.courses.values_list('name', flat=True)))])
+        return Response({'data': dl})
 
 @register()
 class MajorViewSet(viewsets.ModelViewSet):
@@ -121,16 +131,17 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
         'id': ['in', 'exact'],
         'grade': ['exact'],
         'class': ['exact', 'in'],
-        'number': ['exact'],
+        'number': ['exact', 'in'],
         'is_active': ['exact'],
         'is_bind': ['exact'],
         'is_formal': ['exact'],
-        'class__id': ['exact', 'in']
+        'class__id': ['exact', 'in'],
+        'user': ['exact']
     }
     ordering_fields = ('name', 'number', 'create_time', 'grade', 'clazz')
 
     def get_permissions(self):
-        if self.action == 'binding':
+        if self.action in ['binding', 'trial_application']:
             return [IsAuthenticated()]
         return super(StudentViewSet, self).get_permissions()
 
@@ -151,6 +162,11 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
     def batch_active(self, request):
         return self.do_batch_action('is_active', True)
 
+    @decorators.list_route(['POST'], permission_classes=[IsAuthenticated])
+    def trial_application(self, request):
+        helper.apply_to_be_student(request.user, request.data)
+        return Response({'detail': 'ok'})
+
     @decorators.list_route(['post'], permission_classes=[IsAuthenticated])
     def binding(self, request):
         serializer = serializers.StudentBindingSerializer(data=request.data, context={'request': request})
@@ -166,6 +182,10 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
     @decorators.list_route(['POST'])
     def batch_unbind(self, request):
         return self.do_batch_action(helper.unbind)
+
+    @decorators.list_route(['POST'])
+    def batch_reset_password(self, request):
+        return self.do_batch_action(helper.reset_password)
 
     @decorators.detail_route(['post'])
     def unbind(self, request):
