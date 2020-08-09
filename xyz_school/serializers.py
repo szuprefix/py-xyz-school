@@ -144,7 +144,7 @@ class StudentBindingSerializer(serializers.Serializer):
             helper.bind(student, self.cur_user)
             from django.contrib.auth import login
             login(self.request, student.user, backend='binding')
-        return [unicode(s.school) for s in students]
+        return [unicode(s) for s in students]
 
 
 class ClassCourseSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
