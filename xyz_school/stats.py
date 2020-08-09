@@ -35,7 +35,7 @@ def get_student_bind_events(sids):
     from xyz_common.models import Event
     qset = Event.objects.filter(owner_type__app_label='school', owner_type__model='Student', name='bind')
     qset = statutils.using_stats_db(qset)
-    qset = qset.filter(object_id__in=sids)
+    qset = qset.filter(owner_id__in=sids)
     return qset
 
 
