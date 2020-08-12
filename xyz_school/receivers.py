@@ -4,7 +4,10 @@ from django.dispatch import receiver
 from django.db.models.signals import post_save
 from xyz_auth.signals import to_get_user_profile
 from xyz_saas.signals import to_get_party_settings
+from xyz_verify.models import Verify
 from . import models, helper, serializers, choices
+from django.conf import settings
+from xyz_util.datautils import access
 import logging
 
 log = logging.getLogger("django")
@@ -45,7 +48,8 @@ def init_session(sender, **kwargs):
 #             clazz.student_names.append(student.name)
 #             clazz.save()
 #     except Exception, e:
-#         log.error("add_student_to_clazz_names error: %s" % e)
+#         import traceback
+#         log.error("add_student_to_class_names error: %s, %s", e, traceback.format_exc())
 #
 
 # @receiver(post_save, sender=Worker)
@@ -70,53 +74,27 @@ def get_school_profile(sender, **kwargs):
 
 @receiver(to_get_party_settings)
 def get_school_settings(sender, **kwargs):
-    from django.conf import settings
-    from xyz_util.datautils import access
     return {'school': {'student': {'unregistered': access(settings, 'SCHOOL.STUDENT.UNREGISTERED')}}}
+
+@receiver(post_save, sender=Verify)
+def create_student_after_verify(sender, **kwargs):
+    created = kwargs.get('created')
+    if created:
+        return
+    helper.create_student_after_verify(kwargs.get('instance'))
 
 def create_student_for_wechat_user(sender, **kwargs):
     wuser = kwargs['instance']
-    user = wuser.user
-    school = models.School.objects.first()
-    grade = school.grades.first()
-    from datetime import datetime
-    year = datetime.now().year
-    session, created = school.sessions.get_or_create(number=year)
-    clazz, created = school.classes.get_or_create(
-        name="%d级微信公众号班" % year,
-        defaults=dict(
-            entrance_session=session,
-            grade=grade)
-    )
-    worker, created = school.party.workers.get_or_create(
-        number=wuser.openid,
-        defaults=dict(
-            name=wuser.nickname,
-            user=user,
-            position="学生"
-        )
-    )
-    student, created = school.students.get_or_create(
-        number=wuser.openid,
-        defaults=dict(
-            user=user,
-            name=wuser.nickname,
-            clazz=clazz,
-            is_bind=True,
-            entrance_session=session,
-            grade=grade
-        ))
+    helper.create_student_for_wechat_user(wuser)
 
 
 def bind_create_student_for_wechat_user_receiver():
-    from django.conf import settings
-    from xyz_util.datautils import access
-    b = access(settings, 'SZU_SAAS.SCHOOL.AUTO_GEN_STUDENT_FROM_WECHAT_USER')
-    if not b:
+    b = access(settings, 'SCHOOL.STUDENT.UNREGISTERED')
+    if not b or b.lower() != 'create_from_wechat':
         return
     from xyz_wechat.models import User
     from django.db.models.signals import post_save
-    from .receivers import create_student_for_wechat_user
+    print 'bind_create_student_for_wechat_user_receiver'
     post_save.connect(create_student_for_wechat_user, sender=User)
 
 
