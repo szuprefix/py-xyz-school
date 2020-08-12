@@ -318,7 +318,7 @@ APPLY_VERIFY_CATEGORY = '申请试用'
 def apply_to_be_student(user, data):
     from xyz_verify.models import Verify
     from django.contrib.contenttypes.models import ContentType
-    school = get_auto_gen_school()
+    # school = get_auto_gen_school()
     Verify.objects.create(
         user=user,
         category=APPLY_VERIFY_CATEGORY,
