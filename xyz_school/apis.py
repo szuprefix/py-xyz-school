@@ -36,6 +36,12 @@ class GradeViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.GradeSerializer
 
 
+    @decorators.list_route(['post'])
+    def gen_default(self, request):
+        from . import helper
+        helper.gen_default_grades()
+        return Response({'detail': 'ok'})
+
 @register()
 class SessionViewSet(viewsets.ModelViewSet):
     queryset = models.Session.objects.all()
@@ -43,6 +49,13 @@ class SessionViewSet(viewsets.ModelViewSet):
     search_fields = ('name', 'number')
     filter_fields = {'id': ['in', 'exact']}
 
+
+    @decorators.list_route(['post'])
+    def gen_default(self, request):
+        from . import helper
+        helper.gen_default_session(-1)
+        helper.gen_default_session(0)
+        return Response({'detail': 'ok'})
 
 @register()
 class ClassViewSet(viewsets.ModelViewSet):

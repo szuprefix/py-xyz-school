@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from django.db import models
 from django.utils.functional import cached_property
-
+from . import choices
 from xyz_util.modelutils import CodeMixin
 from django.contrib.auth.models import User, Group
 
@@ -152,7 +152,8 @@ class Class(CodeMixin, models.Model):
                                         blank=True, on_delete=models.PROTECT)
     students = models.ManyToManyField('student', verbose_name='学生', blank=True, related_query_name='class',
                                       related_name='classes')
-    major = models.ForeignKey(Major, verbose_name=Major._meta.verbose_name, null=True, blank=True, related_name='classes', related_query_name='class')
+    major = models.ForeignKey(Major, verbose_name=Major._meta.verbose_name, null=True, blank=True,
+                              related_name='classes', related_query_name='class')
     create_time = models.DateTimeField("创建时间", auto_now_add=True)
     modify_time = models.DateTimeField("修改时间", auto_now=True)
     is_active = models.BooleanField("有效", default=True)
@@ -176,6 +177,16 @@ class Class(CodeMixin, models.Model):
         if not hasattr(self, 'grade'):
             self.grade = Grade.objects.get(number=helper.cur_grade_number(grade_name))
         return super(Class, self).save(**kwargs)
+
+    def graduate(self):
+        from datetime import datetime
+        year = datetime.now().year
+        graduate_grade = Grade.objects.get(number=choices.GRADE_GRADUATE)
+        graduate_session = Session.objects.get(number=year)
+        self.students.update(is_active=False, grade=graduate_grade, graduate_session=graduate_session)
+        self.grade = graduate_grade
+        self.graduate_session = graduate_session
+        self.save()
 
 
 class ClassCourse(models.Model):

@@ -4,14 +4,18 @@ import datetime
 from xyz_util import dateutils, datautils, modelutils
 from . import choices, models
 import re
+from django.conf import settings
 
-
-def gen_default_grades(type):
+def gen_default_grades(type=None):
+    if type is None:
+        type = getattr(settings, 'SCHOOL_TYPE', choices.SCHOOL_TYPE_UNIVERSITY)
     gs = choices.MAP_SCHOOL_TYPE_GRADES.get(type)
     if not gs:
         return
     for number, name in gs:
-        models.Grade.objects.create(name=name, number=number)
+        models.Grade.objects.get_or_create(number=number, defaults=dict(name=name))
+    models.Grade.objects.get_or_create(number=choices.GRADE_PENDING, defaults=dict(name=choices.OPTION_GRADE_PENDING[1]))
+    models.Grade.objects.get_or_create(number=choices.GRADE_GRADUATE, defaults=dict(name=choices.OPTION_GRADE_GRADUATE[1]))
 
 
 def gen_default_session(offset=0):
@@ -26,6 +30,8 @@ def gen_default_session(offset=0):
             end_date="%s-07-01" % (year + 1))
     )
 
+def update_class_grade(classs):
+    pass
 
 RE_CLASS_GRADE_NAME = re.compile(r"^(\d{4}|\d{2})[级届]*")
 
