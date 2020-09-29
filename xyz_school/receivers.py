@@ -11,6 +11,8 @@ from xyz_util.datautils import access
 import logging
 
 log = logging.getLogger("django")
+
+
 # from xyz_tenant.models import App
 
 
@@ -32,9 +34,12 @@ log = logging.getLogger("django")
 def init_session(sender, **kwargs):
     try:
         grade = kwargs['instance']
+        if grade.number == choices.GRADE_GRADUATE:
+            return
         helper.gen_default_session(grade.number - 1)
     except Exception, e:
-        log.error("init_session error: %s" % e)
+        import traceback
+        log.error("init_session error: %s", traceback.format_exc())
 
 
 # @receiver(post_save, sender=models.Student)
@@ -76,12 +81,14 @@ def get_school_profile(sender, **kwargs):
 def get_school_settings(sender, **kwargs):
     return {'school': {'student': {'unregistered': access(settings, 'SCHOOL.STUDENT.UNREGISTERED')}}}
 
+
 @receiver(post_save, sender=Verify)
 def create_student_after_verify(sender, **kwargs):
     created = kwargs.get('created')
     if created:
         return
     helper.create_student_after_verify(kwargs.get('instance'))
+
 
 def create_student_for_wechat_user(sender, **kwargs):
     wuser = kwargs['instance']
