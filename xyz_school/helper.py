@@ -361,7 +361,7 @@ def create_student_after_verify(verify):
 
 def create_student_for_wechat_user(wuser, name=None):
     user = wuser.user
-    if hasattr(user, 'as_school_student') and hasattr(user, 'as_saas_worker'):
+    if hasattr(user, 'as_school_student'): # and hasattr(user, 'as_saas_worker'):
         return
     grade = models.Grade.objects.first()
     from datetime import datetime
