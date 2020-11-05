@@ -211,4 +211,5 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
 
     @decorators.list_route(['POST'])
     def register_informal(self, request):
-        return helper.create_informal_student(request.user)
+        helper.create_informal_student(request.user)
+        return Response({'detail': 'success'}, status=status.HTTP_201_CREATED)
