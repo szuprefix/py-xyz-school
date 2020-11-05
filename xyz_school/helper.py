@@ -372,7 +372,7 @@ def create_informal_student(user):
     if hasattr(user, 'as_school_student'):  # and hasattr(user, 'as_saas_worker'):
         return
     name = user.get_full_name()
-    number = user.username
+    number = user.username[-32:]
     grade = models.Grade.objects.first()
     from datetime import datetime
     year = datetime.now().year
