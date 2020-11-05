@@ -208,3 +208,7 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
     @decorators.list_route(['get'])
     def stat(self, request):
         return do_rest_stat_action(self, stats.stats_student)
+
+    @decorators.list_route(['POST'])
+    def register_informal(self, request):
+        return helper.create_informal_student(request.user)

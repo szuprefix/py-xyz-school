@@ -6,6 +6,7 @@ from . import choices, models
 import re
 from django.conf import settings
 
+
 def gen_default_grades(type=None):
     if type is None:
         type = getattr(settings, 'SCHOOL_TYPE', choices.SCHOOL_TYPE_UNIVERSITY)
@@ -14,8 +15,10 @@ def gen_default_grades(type=None):
         return
     for number, name in gs:
         models.Grade.objects.get_or_create(number=number, defaults=dict(name=name))
-    models.Grade.objects.get_or_create(number=choices.GRADE_PENDING, defaults=dict(name=choices.OPTION_GRADE_PENDING[1]))
-    models.Grade.objects.get_or_create(number=choices.GRADE_GRADUATE, defaults=dict(name=choices.OPTION_GRADE_GRADUATE[1]))
+    models.Grade.objects.get_or_create(number=choices.GRADE_PENDING,
+                                       defaults=dict(name=choices.OPTION_GRADE_PENDING[1]))
+    models.Grade.objects.get_or_create(number=choices.GRADE_GRADUATE,
+                                       defaults=dict(name=choices.OPTION_GRADE_GRADUATE[1]))
 
 
 def gen_default_session(offset=0):
@@ -30,8 +33,10 @@ def gen_default_session(offset=0):
             end_date="%s-07-01" % (year + 1))
     )
 
+
 def update_class_grade(classs):
     pass
+
 
 RE_CLASS_GRADE_NAME = re.compile(r"^(\d{4}|\d{2})[级届]*")
 
@@ -222,7 +227,6 @@ def get_cur_term(corp):
 
 
 def init_student(user, profile):
-
     fns = "number,name,class".split(",")
     ps = modelutils.translate_model_values(models.Student, profile, fns)
 
@@ -313,13 +317,16 @@ def get_exam_papers_for_courses(courses):
         | Q(owner_type=cptid) & Q(owner_id__in=cpids)
     )
 
-def get_auto_gen_school ():
+
+def get_auto_gen_school():
     from django.conf import settings
     return models.School.objects.get(party_id=settings.DEFAULT_SAAS_PARTY)
     # s = access(settings, 'SCHOOL.STUDENT.AUTO_GEN_FOR_SCHOOL')
     # return models.School.objects.filter(id=s).first()
 
+
 APPLY_VERIFY_CATEGORY = '申请试用'
+
 
 def apply_to_be_student(user, data):
     from xyz_verify.models import Verify
@@ -333,6 +340,7 @@ def apply_to_be_student(user, data):
         content=data
     )
 
+
 def create_student_after_verify(verify):
     from django.contrib.contenttypes.models import ContentType
     if verify.category != APPLY_VERIFY_CATEGORY:
@@ -345,7 +353,7 @@ def create_student_after_verify(verify):
     from xyz_message.helper import send_message, revoke_message
     unique_id = "verify:%s" % verify.id
     if verify.status == choices.STATUS_PASS:
-        create_student_for_wechat_user(user.as_wechat_user, name=d.get('name'))
+        create_informal_student(user)
         revoke_message(user, unique_id)
     elif verify.status == choices.STATUS_REJECT:
         title = "%s被%s." % (verify.category, verify.get_status_display())
@@ -359,15 +367,16 @@ def create_student_after_verify(verify):
         if hasattr(user, 'as_school_student'):
             user.as_school_student.delete()
 
-def create_student_for_wechat_user(wuser, name=None):
-    user = wuser.user
-    if hasattr(user, 'as_school_student'): # and hasattr(user, 'as_saas_worker'):
+
+def create_informal_student(user):
+    if hasattr(user, 'as_school_student'):  # and hasattr(user, 'as_saas_worker'):
         return
+    name = user.get_full_name()
+    number = user.username
     grade = models.Grade.objects.first()
     from datetime import datetime
     year = datetime.now().year
     session, created = models.Session.objects.get_or_create(number=year)
-    name = name or wuser.nickname or wuser.openid
     clazz, created = models.Class.objects.get_or_create(
         name="%s级微信公众号体验班" % year,
         defaults=dict(
@@ -376,7 +385,7 @@ def create_student_for_wechat_user(wuser, name=None):
     )
 
     student, created = models.Student.objects.update_or_create(
-        number=wuser.openid,
+        number=number,
         defaults=dict(
             user=user,
             name=name,

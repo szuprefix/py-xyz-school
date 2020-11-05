@@ -92,7 +92,7 @@ def create_student_after_verify(sender, **kwargs):
 
 def create_student_for_wechat_user(sender, **kwargs):
     wuser = kwargs['instance']
-    helper.create_student_for_wechat_user(wuser)
+    helper.create_informal_student(wuser.user)
 
 
 def bind_create_student_for_wechat_user_receiver():
