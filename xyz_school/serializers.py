@@ -45,7 +45,7 @@ class ClassSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer)
 
     class Meta:
         model = models.Class
-        fields = ('name', 'short_name', 'entrance_session', 'entrance_session_name', 'code',
+        fields = ('name', 'short_name', 'entrance_session', 'entrance_session_name', 'code', 'tags',
                   'primary_teacher', 'grade', 'grade_name', 'students', 'major', 'major_name')
         
 
@@ -76,13 +76,14 @@ class TeacherListSerializer(TeacherSerializer):
 
 class StudentSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):
     grade_name = serializers.CharField(source="grade.name", read_only=True)
+    entrance_session_name = serializers.CharField(source="entrance_session.name", read_only=True)
     class_names = serializers.CharField(label='班级', read_only=True)
 
     class Meta:
         model = models.Student
         fields = (
             'id', 'name', 'number', 'class_names', 'classes', 'grade', 'grade_name', 'courses', 'is_active',
-            'is_bind', 'is_formal'
+            'is_bind', 'is_formal', 'entrance_session', 'entrance_session_name'
         )
 
 

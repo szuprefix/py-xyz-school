@@ -61,7 +61,7 @@ class SessionViewSet(viewsets.ModelViewSet):
 class ClassViewSet(viewsets.ModelViewSet):
     queryset = models.Class.objects.all()
     serializer_class = serializers.ClassSerializer
-    search_fields = ('name', 'code')
+    search_fields = ('name', 'code', 'tags')
     filter_fields = {
         'id': ['in', 'exact'],
         'name': ['exact', 'endswith', 'in'],
@@ -143,6 +143,7 @@ class StudentViewSet(BatchActionMixin, viewsets.ModelViewSet):
     filter_fields = {
         'id': ['in', 'exact'],
         'grade': ['exact'],
+        'entrance_session': ['exact'],
         'class': ['exact', 'in'],
         'number': ['exact', 'in'],
         'is_active': ['exact'],

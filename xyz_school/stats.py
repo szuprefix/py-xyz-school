@@ -60,6 +60,7 @@ def stats_class(qset=None, measures=None, period=None):
         'today': lambda: dstat.stat("今天", only_first=True),
         'yesterday': lambda: dstat.stat("昨天", only_first=True),
         'all': lambda: qset.count(),
-        'daily': lambda: dstat.stat(period)
+        'daily': lambda: dstat.stat(period),
+        'tags': lambda: statutils.count_by(qset, 'tags')
     }
     return dict([(m, funcs[m]()) for m in measures])

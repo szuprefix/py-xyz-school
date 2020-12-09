@@ -157,6 +157,7 @@ class Class(CodeMixin, models.Model):
     create_time = models.DateTimeField("创建时间", auto_now_add=True)
     modify_time = models.DateTimeField("修改时间", auto_now=True)
     is_active = models.BooleanField("有效", default=True)
+    tags = models.CharField('标签', max_length=256, blank=True, default='')
     courses = models.ManyToManyField("course.course", verbose_name="课程", blank=True, through="ClassCourse",
                                      related_name="school_classes")
 
