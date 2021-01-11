@@ -5,7 +5,7 @@ import sys
 
 setup(
     name="xyz-school",
-    version="0.0.15",
+    version="0.0.16",
     author="szuprefix",
     author_email="szuprefix@126.com",
     description="school",
