@@ -56,7 +56,7 @@ class ClassNameSerializer(serializers.ModelSerializer):
 
 class ClassListSerializer(ClassSerializer):
     class Meta(ClassSerializer.Meta):
-        fields = ('id', 'name', 'student_count', 'grade', 'entrance_session', 'grade_name', 'entrance_session_name', 'major', 'major_name')
+        fields = ('id', 'name', 'student_count', 'grade', 'entrance_session', 'grade_name', 'entrance_session_name','tags', 'major', 'major_name')
 
 
 class TeacherSerializer(IDAndStrFieldSerializerMixin, serializers.ModelSerializer):

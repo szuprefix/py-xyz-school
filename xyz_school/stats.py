@@ -12,7 +12,7 @@ def student_funnel(qset):
         ['答题', qset.annotate(num_answers=Count('user__exam_answers')).filter(num_answers__gt=0).count()]
     ]
 
-def stats_student(qset=None, measures=None, period=None):
+def stats_student(qset=None, measures=None, period=None, time_field=None):
     qset = qset if qset is not None else models.Student.objects.all()
     qset = statutils.using_stats_db(qset)
     dstat = statutils.DateStat(qset, 'create_time')
@@ -39,7 +39,7 @@ def get_student_bind_events(sids):
     return qset
 
 
-def stats_teacher(qset=None, measures=None, period=None):
+def stats_teacher(qset=None, measures=None, period=None, time_field=None):
     qset = qset if qset is not None else models.Teacher.objects.all()
     qset = statutils.using_stats_db(qset)
     dstat = statutils.DateStat(qset, 'create_time')
@@ -52,7 +52,7 @@ def stats_teacher(qset=None, measures=None, period=None):
     return dict([(m, funcs[m]()) for m in measures])
 
 
-def stats_class(qset=None, measures=None, period=None):
+def stats_class(qset=None, measures=None, period=None, time_field=None):
     qset = qset if qset is not None else models.Class.objects.all()
     qset = statutils.using_stats_db(qset)
     dstat = statutils.DateStat(qset, 'create_time')
